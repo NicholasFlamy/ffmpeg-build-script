@@ -18,6 +18,7 @@ CONFIGURE_OPTIONS=()
 NONFREE_AND_GPL=false
 DISABLE_LV2=false
 LATEST=false
+FORCE_STATIC=false
 MANPAGES=1
 CURRENT_PACKAGE_VERSION=0
 
@@ -237,6 +238,9 @@ usage() {
   echo "      --small                    Prioritize small size over speed and usability; don't build manpages"
   echo "      --full-static              Build a full static FFmpeg binary (eg. glibc, pthreads etc...) **only Linux**"
   echo "                                 Note: Because of the NSS (Name Service Switch), glibc does not recommend static links."
+  echo "      --force-static             Force some options enabled with static build (enables VAAPI)"
+  echo "                                 --full-static option needed"
+  echo "                                 Warning: This is unstable and may result in broken builds."
   echo ""
 }
 
@@ -278,6 +282,9 @@ while (($# > 0)); do
       LDEXEFLAGS="-static -fPIC"
       CFLAGS+=" -fPIC"
       CXXFLAGS+=" -fPIC"
+    fi
+    if [[ "$1" == "--force-static" ]]; then
+      FORCE_STATIC=true
     fi
     if [[ "$1" == "--latest" ]]; then
       LATEST=true
@@ -1028,7 +1035,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
   fi
 
   # Vaapi doesn't work well with static links FFmpeg.
-  if [ -z "$LDEXEFLAGS" ]; then
+  if [ -z "$LDEXEFLAGS" ] || $FORCE_STATIC; then
     # If the libva development SDK is installed, enable vaapi.
     if library_exists "libva"; then
       if build "vaapi" "1"; then
